@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Arbitrage Calculator</title>
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  font-family:Inter,sans-serif;
+}
+
+body{
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  color:white;
+  padding:20px;
+  overflow:hidden;
+  position:relative;
+  background:#0f172a;
+}
+
+/* animated blooms */
+body::before,
+body::after{
+  content:"";
+  position:absolute;
+  width:650px;
+  height:650px;
+  border-radius:50%;
+  filter:blur(110px);
+  opacity:.32;
+  z-index:-2;
+}
+
+body::before{
+  top:-180px;
+  left:-180px;
+  background:radial-gradient(circle,
+    rgba(37,99,235,.95),
+    rgba(6,182,212,.55),
+    transparent 70%);
+  animation:floatBloomA 26s linear infinite;
+}
+
+body::after{
+  right:-180px;
+  bottom:-180px;
+  background:radial-gradient(circle,
+    rgba(236,72,153,.95),
+    rgba(249,115,22,.55),
+    transparent 70%);
+  animation:floatBloomB 31s linear infinite;
+}
+
+@keyframes floatBloomA{
+  0%{
+    transform:translate(0,0) scale(1) rotate(0deg);
+    filter:hue-rotate(0deg) blur(110px);
+  }
+  50%{
+    transform:translate(140px,-80px) scale(1.25) rotate(180deg);
+    filter:hue-rotate(120deg) blur(145px);
+  }
+  100%{
+    transform:translate(0,0) scale(1) rotate(360deg);
+    filter:hue-rotate(240deg) blur(110px);
+  }
+}
+
+@keyframes floatBloomB{
+  0%{
+    transform:translate(0,0) scale(1.15) rotate(0deg);
+    filter:hue-rotate(0deg) blur(120px);
+  }
+  50%{
+    transform:translate(-130px,100px) scale(.9) rotate(-180deg);
+    filter:hue-rotate(-140deg) blur(155px);
+  }
+  100%{
+    transform:translate(0,0) scale(1.15) rotate(-360deg);
+    filter:hue-rotate(-280deg) blur(120px);
+  }
+}
+
+/* shooting stars */
+.sky{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:-1;
+}
+
+.shooting-star{
+  position:absolute;
+  width:140px;
+  height:1px;
+  background:linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,.45) 65%,
+    rgba(255,255,255,1) 100%
+  );
+  opacity:0;
+  filter:blur(.25px);
+  animation:shoot linear infinite;
+  transform-origin:right center;
+}
+
+@keyframes shoot{
+  0%{
+    transform:translate(0,0) rotate(35deg);
+    opacity:0;
+  }
+  10%,80%{
+    opacity:1;
+  }
+  100%{
+    transform:translate(100vw,100vh) rotate(35deg);
+    opacity:0;
+  }
+}
+
+/* card */
+.container{
+  width:100%;
+  max-width:560px;
+  padding:34px;
+  border-radius:30px;
+  background:linear-gradient(
+    135deg,
+    rgba(255,255,255,.0),
+    rgba(255,255,255,.0)
+  );
+  backdrop-filter:blur(10px) saturate(140%);
+  -webkit-backdrop-filter:blur(10px) saturate(140%);
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 25px 60px rgba(0,0,0,.45);
+  position:relative;
+  overflow:hidden;
+  animation:dropIn .9s ease;
+  transition:
+    transform .45s cubic-bezier(.22,1,.36,1),
+    box-shadow .55s cubic-bezier(.22,1,.36,1);
+}
+
+.container::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:
+    linear-gradient(
+      155deg,
+      rgba(255,255,255,.08) 0%,
+      rgba(255,255,255,.03) 20%,
+      transparent 40%
+    );
+  pointer-events:none;
+}
+
+.container:hover{
+  transform:translateY(-6px) scale(1.01);
+}
+
+@keyframes dropIn{
+  from{
+    opacity:0;
+    transform:translateY(-90px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+h1{
+  text-align:center;
+  margin-bottom:28px;
+  font-size:2rem;
+}
+
+.field{
+  margin-bottom:18px;
+}
+
+.odds-row{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+
+.stake-inline{
+  min-width:90px;
+  text-align:right;
+  color:#188C42;
+  font-weight:700;
+  font-size:1rem;
+}
+
+label{
+  display:block;
+  margin-bottom:8px;
+  color:#cbd5e1;
+}
+
+input{
+  width:100%;
+  padding:16px;
+  border:none;
+  border-radius:16px;
+  background:rgba(255,255,255,.08);
+  color:white;
+  font-size:1rem;
+  transition:.25s;
+}
+
+input:hover{
+  transform:scale(1.02);
+}
+
+input:focus{
+  outline:none;
+  background:rgba(255,255,255,.16);
+  box-shadow:0 0 0 2px rgba(59,130,246,.45);
+  transform:scale(1.02);
+}
+
+input,
+.toggle button{
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.toggle{
+  display:flex;
+  gap:12px;
+  margin:0;
+}
+
+.toggle button{
+  flex:1;
+  padding:15px;
+  border:none;
+  border-radius:16px;
+  background:rgba(255,255,255,.08);
+  color:white;
+  cursor:pointer;
+  transition:.25s;
+}
+
+.toggle button:hover{
+  transform:scale(1.03);
+}
+
+.toggle button.active{
+  background:#2563eb;
+  box-shadow:0 0 20px rgba(37,99,235,.35);
+}
+
+.results{
+  margin-top:24px;
+  padding:22px;
+  border-radius:18px;
+  background:rgba(255,255,255,.05);
+}
+
+.result-line{
+  display:flex;
+  justify-content:space-between;
+  padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+
+.result-line:last-child{
+  border:none;
+}
+
+#modeToggle,
+#amountField,
+#results{
+  opacity:0;
+  transform:translateY(-10px) scale(.985);
+  max-height:0;
+  margin-top:0;
+  margin-bottom:0;
+  padding-top:0;
+  padding-bottom:0;
+  pointer-events:none;
+  transition:
+    opacity .32s ease,
+    transform .38s cubic-bezier(.22,1,.36,1),
+    max-height .42s cubic-bezier(.22,1,.36,1),
+    margin .42s cubic-bezier(.22,1,.36,1),
+    padding .42s cubic-bezier(.22,1,.36,1);
+}
+
+#modeToggle.show,
+#amountField.show,
+#results.show{
+  opacity:1;
+  transform:translateY(0) scale(1);
+  max-height:220px;
+  margin-top:24px;
+  pointer-events:auto;
+}
+
+#modeToggle,
+#amountField{
+  overflow:visible;
+}
+
+#results{
+  overflow:hidden;
+}
+
+.highlight.success{color:#22c55e;}
+.highlight.fail{color:#ef4444;}
+.highlight.neutral{color:#cbd5e1;}
+</style>
+</head>
+<body>
+
+<div class="sky"></div>
+
+<div class="container neutral">
+  <h1>Arbitrage</h1>
+
+  <div class="field">
+    <label>Kerroin 1</label>
+    <div class="odds-row">
+      <input id="odds1" type="number" step="0.01">
+      <span id="stake1Inline" class="stake-inline"></span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Kerroin 2</label>
+    <div class="odds-row">
+      <input id="odds2" type="number" step="0.01">
+      <span id="stake2Inline" class="stake-inline"></span>
+    </div>
+  </div>
+
+  <div class="toggle" id="modeToggle">
+    <button id="betMode" class="active">Panos</button>
+    <button id="profitMode">Voitto</button>
+  </div>
+
+  <div class="field" id="amountField">
+    <label id="dynamicLabel">Panos</label>
+    <input id="amount" type="number" placeholder="100">
+  </div>
+
+  <div class="results" id="results">
+    <div class="result-line">
+      <span>Kokonaispanos:</span>
+      <span id="totalBet">—</span>
+    </div>
+    <div class="result-line">
+      <span>Voitto:</span>
+      <span class="highlight" id="profit">—</span>
+    </div>
+  </div>
+</div>
+
+<script>
+let mode = "stake";
+let resultsVisible = false;
+
+const odds1 = document.getElementById("odds1");
+const odds2 = document.getElementById("odds2");
+const amount = document.getElementById("amount");
+const toggle = document.getElementById("modeToggle");
+const amountField = document.getElementById("amountField");
+const results = document.getElementById("results");
+const sky = document.querySelector(".sky");
+
+for(let i=0;i<2;i++){
+  const star=document.createElement("div");
+  star.className="shooting-star";
+  star.style.top=Math.random()*25+"%";
+  star.style.left=Math.random()*15+"%";
+  star.style.animationDelay=Math.random()*12+"s";
+  star.style.animationDuration=(4+Math.random()*4)+"s";
+  sky.appendChild(star);
+}
+
+[odds1, odds2, amount].forEach(el=>{
+  el.addEventListener("input", calculate);
+});
+
+document.getElementById("betMode").onclick=()=>{
+  mode="stake";
+  document.getElementById("betMode").classList.add("active");
+  document.getElementById("profitMode").classList.remove("active");
+  document.getElementById("dynamicLabel").innerText="Panos";
+  calculate();
+};
+
+document.getElementById("profitMode").onclick=()=>{
+  mode="profit";
+  document.getElementById("profitMode").classList.add("active");
+  document.getElementById("betMode").classList.remove("active");
+  document.getElementById("dynamicLabel").innerText="Voitto";
+  calculate();
+};
+
+function setState(state){
+  const container=document.querySelector(".container");
+  const profit=document.getElementById("profit");
+  container.className="container "+state;
+  profit.className="highlight "+state;
+}
+
+function hideEverything(full=true){
+  if(full){
+    toggle.classList.remove("show");
+    amountField.classList.remove("show");
+  }
+
+  if(resultsVisible){
+    results.classList.remove("show");
+    resultsVisible=false;
+  }
+}
+
+function clearResults(){
+  document.getElementById("stake1Inline").innerText="";
+  document.getElementById("stake2Inline").innerText="";
+  document.getElementById("profit").innerText="—";
+  document.getElementById("totalBet").innerText="—";
+}
+
+function calculate(){
+  const o1=parseFloat(odds1.value);
+  const o2=parseFloat(odds2.value);
+  const amt=parseFloat(amount.value);
+
+  const invalid=!o1 || !o2;
+  const arb=invalid ? 1 : (1/o1)+(1/o2);
+
+  hideEverything(invalid || arb >= 1);
+  clearResults();
+
+  if(invalid){
+    setState("neutral");
+    return;
+  }
+
+  if(arb >= 1){
+    setState("fail");
+    return;
+  }
+
+  setState("success");
+
+  if(!toggle.classList.contains("show")){
+    requestAnimationFrame(()=>{
+      toggle.classList.add("show");
+      setTimeout(()=>amountField.classList.add("show"),80);
+    });
+  }
+
+  if(!amt || isNaN(amt)) return;
+
+  let totalStake,s1,s2,payout,profit;
+
+  if(mode==="stake"){
+    totalStake=amt;
+    s1=totalStake*((1/o1)/arb);
+    s2=totalStake*((1/o2)/arb);
+    payout=s1*o1;
+    profit=payout-totalStake;
+  }else{
+    payout=amt/(1-arb);
+    s1=payout/o1;
+    s2=payout/o2;
+    totalStake=s1+s2;
+    profit=amt;
+  }
+
+  document.getElementById("stake1Inline").innerText="€"+s1.toFixed(2);
+  document.getElementById("stake2Inline").innerText="€"+s2.toFixed(2);
+  document.getElementById("profit").innerText="€"+profit.toFixed(2);
+  document.getElementById("totalBet").innerText="€"+totalStake.toFixed(2);
+
+  if(!resultsVisible){
+    requestAnimationFrame(()=>{
+      results.classList.add("show");
+      resultsVisible=true;
+    });
+  }
+}
+
+hideEverything();
+setState("neutral");
+clearResults();
+</script>
+
+</body>
+</html>
